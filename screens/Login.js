@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   StatusBar,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import React, {useState} from 'react';
 import {auth} from '../firebase';
@@ -17,12 +18,19 @@ const backImage = require('../assets/backImage.png');
 const Login = ({navigation}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const onHandleLogin = () => {
     if (email !== '' && password !== '') {
+      setLoading(true);
       signInWithEmailAndPassword(auth, email, password)
-        .then(() => console.log('Login success'))
-        .catch(err => Alert.alert('Login error', err.message));
+        .then(() => {
+          setLoading(false);
+        })
+        .catch(err => {
+          setLoading(false);
+          Alert.alert('Login error', err.message);
+        });
     }
   };
   return (
@@ -55,6 +63,11 @@ const Login = ({navigation}) => {
           <Text style={{fontWeight: 'bold', color: '#fff', fontSize: 18}}>
             Log In
           </Text>
+          {loading && (
+            <View style={{marginLeft: 10}}>
+              <ActivityIndicator color="white" />
+            </View>
+          )}
         </TouchableOpacity>
         <View
           style={{
@@ -126,5 +139,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 });

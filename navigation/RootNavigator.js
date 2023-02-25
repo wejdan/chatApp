@@ -12,10 +12,7 @@ import AuthStack from './AuthStack';
 export default function RootNavigator() {
   const {user, setUser} = useContext(AuthenticatedUserContext);
   const [isLoading, setIsLoading] = useState(true);
-  const onAuthStateChanged = async authenticatedUser => {
-    authenticatedUser ? setUser(authenticatedUser) : setUser(null);
-    setIsLoading(false);
-  };
+
   useEffect(() => {
     // onAuthStateChanged returns an unsubscriber
     const unsubscribe = auth.onAuthStateChanged(authenticatedUser => {
