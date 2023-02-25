@@ -11,12 +11,20 @@ import {
   Alert,
 } from 'react-native';
 import React, {useState} from 'react';
+import {auth} from '../firebase';
+import {signInWithEmailAndPassword} from 'firebase/auth';
 const backImage = require('../assets/backImage.png');
 const Login = ({navigation}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const onHandleLogin = () => {};
+  const onHandleLogin = () => {
+    if (email !== '' && password !== '') {
+      signInWithEmailAndPassword(auth, email, password)
+        .then(() => console.log('Login success'))
+        .catch(err => Alert.alert('Login error', err.message));
+    }
+  };
   return (
     <View style={styles.container}>
       <Image source={backImage} style={styles.backImg} />

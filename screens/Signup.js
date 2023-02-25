@@ -11,12 +11,20 @@ import {
   Alert,
 } from 'react-native';
 import React, {useState} from 'react';
+import {auth} from '../firebase';
+import {createUserWithEmailAndPassword} from 'firebase/auth';
 const backImage = require('../assets/backImage.png');
 const Signup = ({navigation}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const onHandleSignUp = () => {};
+  const onHandleSignup = () => {
+    if (email !== '' && password !== '') {
+      createUserWithEmailAndPassword(auth, email, password)
+        .then(() => console.log('Signup success'))
+        .catch(err => Alert.alert('Login error', err.message));
+    }
+  };
   return (
     <View style={styles.container}>
       <Image source={backImage} style={styles.backImg} />
@@ -43,7 +51,7 @@ const Signup = ({navigation}) => {
           onChangeText={text => setPassword(text)}
           style={styles.input}
         />
-        <TouchableOpacity style={styles.button} onPress={onHandleSignUp}>
+        <TouchableOpacity style={styles.button} onPress={onHandleSignup}>
           <Text style={{fontWeight: 'bold', color: '#fff', fontSize: 18}}>
             Log In
           </Text>
