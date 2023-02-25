@@ -1,17 +1,17 @@
 import React, {createContext, useState} from 'react';
 
-export const Context = createContext();
+export const AuthenticatedUserContext = createContext();
 
 export const ContextProvider = ({children}) => {
   const [user, setUser] = useState(null);
 
   return (
-    <Context.Provider
+    <AuthenticatedUserContext.Provider
       value={{
         user,
         setUser,
       }}>
       {children}
-    </Context.Provider>
+    </AuthenticatedUserContext.Provider>
   );
 };

@@ -10,7 +10,7 @@ import AuthStack from './AuthStack';
 
 export default function RootNavigator() {
   const {user} = useContext(AuthenticatedUserContext);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   if (isLoading) {
     return (
       <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
