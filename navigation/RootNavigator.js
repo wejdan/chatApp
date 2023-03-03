@@ -1,23 +1,24 @@
 import {StyleSheet, View, ActivityIndicator} from 'react-native';
-import React, {useContext, useState, useEffect} from 'react';
+import React, {useContext, useState, useEffect, useCallback} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 
 import {onAuthStateChanged} from 'firebase/auth';
 import {AuthenticatedUserContext} from '../contexts/AuthenticatedUserContext';
-import {auth} from '../firebase';
+import {auth, database} from '../firebase';
 
 import ChatStack from './ChatStack';
 import AuthStack from './AuthStack';
+import {doc, updateDoc} from 'firebase/firestore';
 
 export default function RootNavigator() {
   const {user, setUser} = useContext(AuthenticatedUserContext);
   const [isLoading, setIsLoading] = useState(true);
-
   useEffect(() => {
     // onAuthStateChanged returns an unsubscriber
     const unsubscribe = auth.onAuthStateChanged(authenticatedUser => {
       if (authenticatedUser) {
         setUser(authenticatedUser);
+        //   updateUser();
       } else {
         setUser(null);
       }

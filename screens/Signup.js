@@ -2,7 +2,7 @@ import {
   StyleSheet,
   Text,
   View,
-  Button,
+  ActivityIndicator,
   TextInput,
   Image,
   SafeAreaView,
@@ -17,12 +17,19 @@ const backImage = require('../assets/backImage.png');
 const Signup = ({navigation}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const onHandleSignup = () => {
     if (email !== '' && password !== '') {
+      setLoading(true);
       createUserWithEmailAndPassword(auth, email, password)
-        .then(() => console.log('Signup success'))
-        .catch(err => Alert.alert('Login error', err.message));
+        .then(() => {
+          setLoading(false);
+        })
+        .catch(err => {
+          Alert.alert('Login error', err.message);
+          setLoading(false);
+        });
     }
   };
   return (
@@ -53,8 +60,13 @@ const Signup = ({navigation}) => {
         />
         <TouchableOpacity style={styles.button} onPress={onHandleSignup}>
           <Text style={{fontWeight: 'bold', color: '#fff', fontSize: 18}}>
-            Log In
+            Sign Up
           </Text>
+          {loading && (
+            <View style={{marginLeft: 10}}>
+              <ActivityIndicator color="white" />
+            </View>
+          )}
         </TouchableOpacity>
         <View
           style={{
@@ -126,5 +138,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 40,
+    flexDirection: 'row',
   },
 });

@@ -1,45 +1,174 @@
-import React, {useEffect} from 'react';
-import {View, TouchableOpacity, Text, Image, StyleSheet} from 'react-native';
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useContext,
+  useState,
+  useCallback,
+} from 'react';
+import {
+  View,
+  ActivityIndicator,
+  StyleSheet,
+  Alert,
+  Pressable,
+} from 'react-native';
+import {signOut} from 'firebase/auth';
+
 import {useNavigation} from '@react-navigation/native';
 import colors from '../theme/colors';
-import Entypo from 'react-native-vector-icons/Entypo';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import Config from 'react-native-config';
-const catImageUrl =
-  'https://i.guim.co.uk/img/media/26392d05302e02f7bf4eb143bb84c8097d09144b/446_167_3683_2210/master/3683.jpg?width=1200&height=1200&quality=85&auto=format&fit=crop&s=49ed3252c0b2ffb49cf8b508892e452d';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons';
+import {auth, database} from '../firebase';
+import md5 from 'md5';
+
+import {
+  collection,
+  orderBy,
+  query,
+  onSnapshot,
+  limit,
+  getDocs,
+  updateDoc,
+  doc,
+} from 'firebase/firestore';
+import ChatListItem from '../components/ChatListItem';
+import {dateFormatter} from '../utils/helper';
 
 const Home = () => {
   const navigation = useNavigation();
-  console.log(Config.API_KEY);
+
+  const [usersList, setUsersList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  React.useEffect(
+    () =>
+      navigation.addListener('beforeRemove', e => {
+        e.preventDefault();
+      }),
+    [navigation],
+  );
+  const updateLastSeen = useCallback(async () => {
+    let docRef = doc(database, 'users', auth.currentUser.uid);
+
+    await updateDoc(docRef, {
+      lastSeen: new Date(),
+      isOnline: false,
+    });
+    signOut(auth);
+  }, []);
+  const onLogOut = () => {
+    Alert.alert('Log Out', 'Are you sure you want to logout?', [
+      {text: "Don't leave", style: 'cancel', onPress: () => {}},
+      {
+        text: 'Logout',
+        style: 'destructive',
+
+        onPress: () => {
+          updateLastSeen();
+        },
+      },
+    ]);
+  };
+  const getChat = userId => {
+    const list = [auth.currentUser.uid, userId];
+    list.sort();
+    const chatName = md5(list[0] + list[1]);
+    return chatName;
+  };
+  const getLastMessage = async chatname => {
+    let lastMessage;
+
+    const collectionRef = collection(database, 'chat_' + chatname);
+    const q = query(collectionRef, orderBy('createdAt', 'desc'), limit(1));
+    const querySnapshot = await getDocs(q);
+    querySnapshot.forEach(doc => {
+      // doc.data() is never undefined for  doc snapshots
+
+      lastMessage = doc.data();
+      lastMessage.createdAt = doc.data().createdAt.toDate();
+    });
+    if (lastMessage == undefined) {
+      lastMessage = {text: '', createdAt: new Date(0)};
+    }
+    return lastMessage;
+  };
+
   useEffect(() => {
     navigation.setOptions({
-      headerLeft: () => (
-        <FontAwesome
-          name="search"
-          size={24}
-          color={colors.gray}
-          style={{marginLeft: 15}}
-        />
-      ),
+      title: `${auth.currentUser.email}`,
       headerRight: () => (
-        <Image
-          source={{uri: catImageUrl}}
-          style={{
-            width: 40,
-            height: 40,
-            marginRight: 15,
-          }}
-        />
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+          <Pressable
+            onPress={() => {
+              navigation.navigate('ProfileScreen');
+            }}>
+            <Ionicons
+              name="ios-settings-sharp"
+              size={24}
+              color="royalblue"
+              style={{marginLeft: 15}}
+            />
+          </Pressable>
+          <SimpleLineIcons
+            onPress={onLogOut}
+            name="logout"
+            size={24}
+            //   color={colors.gray}
+            style={{marginLeft: 15}}
+          />
+        </View>
       ),
     });
   }, [navigation]);
+
+  useLayoutEffect(() => {
+    setLoading(true);
+    const collectionRef = collection(database, 'users');
+    const q = query(collectionRef);
+    const unsubscriber = onSnapshot(q, async snapshot => {
+      let data = [];
+      await Promise.all(
+        snapshot.docs.map(async doc => {
+          const userId = doc.data().uid;
+
+          if (userId != auth.currentUser.uid) {
+            const chatName = getChat(userId);
+            const lastmessage = await getLastMessage(chatName);
+
+            //   const d = doc.data().lastSeen.toDate();
+            const formatteddatestr = dateFormatter(doc.data().lastSeen);
+            data.push({
+              id: doc.data().uid,
+              displayName: doc.data().displayName,
+              avatar: doc.data().avatar,
+              isOnline: doc.data().isOnline,
+              lastSeen: formatteddatestr,
+              lastmessage,
+            });
+          }
+        }),
+      );
+      data.sort(function (a, b) {
+        return b.lastmessage.createdAt - a.lastmessage.createdAt;
+      });
+      setUsersList(data);
+      setLoading(false);
+    });
+    return unsubscriber;
+  }, [navigation]);
+
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        onPress={() => navigation.navigate('Chat')}
-        style={styles.chatButton}>
-        <Entypo name="chat" size={24} color={colors.lightGray} />
-      </TouchableOpacity>
+      {loading && (
+        <View style={styles.cover}>
+          <ActivityIndicator size="large" />
+        </View>
+      )}
+      {usersList.map((userItem, i) => {
+        if (userItem.uid == auth.currentUser.uid) {
+          return;
+        }
+        return <ChatListItem user={userItem} key={i} />;
+      })}
     </View>
   );
 };
@@ -49,8 +178,7 @@ export default Home;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'flex-end',
+
     backgroundColor: '#fff',
   },
   chatButton: {
@@ -69,5 +197,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     marginRight: 20,
     marginBottom: 50,
+  },
+  cover: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
